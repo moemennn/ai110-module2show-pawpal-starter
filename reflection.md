@@ -30,8 +30,7 @@ Yes, my design changed slightly during implementation to make the model more rea
 
 **b. Tradeoffs**
 
-- Describe one tradeoff your scheduler makes.
-- Why is that tradeoff reasonable for this scenario?
+One tradeoff my scheduler makes is that it currently checks for exact `preferred_time` matches when it detects conflicts, instead of calculating whether two tasks overlap by duration. This keeps the conflict logic lightweight, easy to explain, and reliable for a small demo app, but it can miss cases where tasks are genuinely overlapping even if their preferred start times differ. For example, two tasks could both be assigned to a morning window but still span different durations in a way that creates a real overlap. That tradeoff is reasonable here because the current goal is to catch obvious scheduling collisions quickly without adding more complex duration-interval logic to the model.
 
 ---
 

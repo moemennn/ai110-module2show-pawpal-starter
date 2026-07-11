@@ -72,14 +72,14 @@ Sample test output:
 
 ## 📐 Smarter Scheduling
 
-> Fill in once you've implemented scheduling logic.
+The scheduler now includes a small set of lightweight but useful behaviors that make the demo more realistic and more adaptive.
 
 | Feature | Method(s) | Notes |
 |---------|-----------|-------|
-| Task sorting | | e.g., by priority, duration |
-| Filtering | | e.g., skip tasks if time runs out |
-| Conflict handling | | e.g., overlapping time slots |
-| Recurring tasks | | e.g., daily vs. weekly |
+| Sorting behavior | `Scheduler.sort_by_time()` and `Scheduler.sort_tasks()` | Orders tasks by preferred time, then by urgency and duration. This lets the plan reflect a schedule-friendly ordering instead of only a raw list. |
+| Filtering behavior | `Scheduler.filter_tasks_by_pet()` and `Scheduler.filter_tasks_by_status()` | Supports small view-level filtering such as showing only the tasks for one pet or only pending tasks. |
+| Conflict detection logic | `Scheduler.detect_conflicts()` | Checks whether multiple tasks share the same preferred time slot and emits a warning message instead of crashing the program. |
+| Recurring task logic | `Task._next_due_date()` and `Task.mark_complete()` | When a recurring daily or weekly task is completed, the model creates the next occurrence automatically using `timedelta`. |
 
 ## 📸 Demo Walkthrough
 

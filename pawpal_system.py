@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, timedelta
 from typing import List, Optional
 
 
@@ -103,6 +103,7 @@ class Task:
     recurring: bool = False
     preferred_time: Optional[str] = None
     notes: str = ""
+    due_date: Optional[date] = None
     pet: Optional["Pet"] = None
 
     def __post_init__(self) -> None:
@@ -113,6 +114,8 @@ class Task:
             raise ValueError("duration_minutes cannot be negative")
         self.frequency = self.frequency.lower()
         self.priority = self.priority.lower()
+        if self.due_date is None:
+            self.due_date = date.today()
 
     def update_priority(self, priority: str) -> None:
         """Change the task priority."""
@@ -124,9 +127,45 @@ class Task:
             raise ValueError("duration_minutes cannot be negative")
         self.duration_minutes = duration_minutes
 
-    def mark_complete(self) -> None:
-        """Mark the task complete."""
+    def _next_due_date(self) -> Optional[date]:
+        """Return the next due date for daily or weekly recurring tasks."""
+        if not self.recurring or self.frequency not in {"daily", "weekly"}:
+            return None
+
+        step = 1 if self.frequency == "daily" else 7
+        base_date = self.due_date or date.today()
+        return base_date + timedelta(days=step)
+
+    def mark_complete(self) -> Optional["Task"]:
+        """Mark the task complete and create the next occurrence for recurring work."""
+        if self.completed:
+            return None
+
         self.completed = True
+
+        next_due_date = self._next_due_date()
+        if next_due_date is None:
+            return None
+
+        next_task = Task(
+            description=self.description,
+            duration_minutes=self.duration_minutes,
+            frequency=self.frequency,
+            completed=False,
+            category=self.category,
+            priority=self.priority,
+            required=self.required,
+            recurring=self.recurring,
+            preferred_time=self.preferred_time,
+            notes=self.notes,
+            due_date=next_due_date,
+            pet=self.pet,
+        )
+
+        if self.pet is not None:
+            self.pet.add_task(next_task)
+
+        return next_task
 
     def mark_incomplete(self) -> None:
         """Mark the task incomplete."""
@@ -213,6 +252,44 @@ class Scheduler:
         """Map a task's priority to a sortable score."""
         return {"high": 3, "medium": 2, "low": 1}.get(task.priority, 0)
 
+    def _time_sort_key(self, task: Task) -> tuple[int, int]:
+        """Convert a task's HH:MM preferred time into a sortable numeric tuple.
+
+        Missing or malformed values are pushed to the end of the ordering so the
+        scheduler remains deterministic even when a task has no explicit time.
+        """
+        preferred_time = getattr(task, "preferred_time", None)
+        if not preferred_time:
+            return (24, 60)
+
+        try:
+            hour_text, minute_text = preferred_time.split(":", 1)
+            hour = int(hour_text)
+            minute = int(minute_text)
+        except (ValueError, TypeError):
+            return (24, 60)
+
+        if hour < 0 or hour > 23 or minute < 0 or minute > 59:
+            return (24, 60)
+
+        return (hour, minute)
+
+    def sort_by_time(self, tasks: List[Task]) -> List[Task]:
+        """Return tasks ordered by preferred time, then by urgency and duration.
+
+        The sort is stable enough for demo scheduling while still keeping the most
+        time-sensitive care work at the front of the list.
+        """
+        return sorted(
+            tasks,
+            key=lambda task: (
+                self._time_sort_key(task),
+                -self._priority_score(task),
+                task.duration_minutes,
+                task.description.lower(),
+            ),
+        )
+
     def sort_tasks(self, tasks: List[Task]) -> List[Task]:
         """Return tasks ordered by priority and other scheduling rules."""
         priority_order = {
@@ -223,10 +300,72 @@ class Scheduler:
             tasks,
             key=lambda task: (
                 priority_order["required" if task.required else "optional"],
+                0 if task.recurring or task.frequency.lower() != "once" else 1,
                 -self._priority_score(task),
+                self._time_sort_key(task),
                 task.duration_minutes,
             ),
         )
+
+    def filter_tasks_by_pet(self, tasks: List[Task], pet_name: str) -> List[Task]:
+        """Return tasks whose linked pet matches the requested pet name.
+
+        Matching is case-insensitive so small input differences do not change the
+        result of the filter.
+        """
+        normalized_name = pet_name.strip().lower()
+        return [task for task in tasks if task.pet and task.pet.name.lower() == normalized_name]
+
+    def filter_tasks_by_status(self, tasks: List[Task], completed: bool) -> List[Task]:
+        """Return tasks that match the requested completion state.
+
+        This is useful for separating pending work from already-finished tasks
+        without mutating the underlying task objects.
+        """
+        return [task for task in tasks if task.completed is completed]
+
+    def filter_recurring_tasks(self, tasks: List[Task]) -> List[Task]:
+        """Return the subset of tasks that should repeat across future days.
+
+        Recurring work is identified either from the explicit `recurring` flag or
+        from a frequency value other than `once`.
+        """
+        return [task for task in tasks if task.recurring or task.frequency.lower() != "once"]
+
+    def detect_conflicts(self, tasks: List[Task]) -> List[str]:
+        """Return lightweight warning messages when multiple tasks share one time slot.
+
+        The method intentionally avoids raising an exception so a demo or small
+        scheduler run can still print the plan while surfacing a visible warning.
+        """
+        warnings: List[str] = []
+        slot_map: dict[str, List[Task]] = {}
+
+        for task in tasks:
+            if task.completed:
+                continue
+
+            slot_key = task.preferred_time or "unscheduled"
+            slot_map.setdefault(slot_key, []).append(task)
+
+        for slot_key, slot_tasks in slot_map.items():
+            if len(slot_tasks) < 2:
+                continue
+
+            pet_names = sorted(
+                {
+                    task.pet.name.lower()
+                    for task in slot_tasks
+                    if task.pet is not None and task.pet.name
+                }
+            )
+            scope = "same pet" if len(pet_names) == 1 else "different pets"
+            description_text = ", ".join(task.description for task in slot_tasks)
+            warnings.append(
+                f"Warning: overlapping tasks at {slot_key} for {scope}: {description_text}."
+            )
+
+        return warnings
 
     def filter_tasks(self, tasks: List[Task]) -> List[Task]:
         """Remove tasks that are not feasible under the current constraints."""

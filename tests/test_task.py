@@ -1,6 +1,8 @@
+from datetime import date, timedelta
+
 import pytest
 
-from pawpal_system import Task
+from pawpal_system import Pet, Task
 
 
 def test_task_initializes_core_fields():
@@ -37,3 +39,45 @@ def test_task_rejects_invalid_duration():
 
     with pytest.raises(ValueError):
         task.update_duration(0)
+
+
+def test_mark_complete_creates_next_daily_occurrence():
+    pet = Pet(name="Luna", species="cat")
+    task = Task(
+        description="Feed cat",
+        duration_minutes=10,
+        frequency="daily",
+        recurring=True,
+    )
+    pet.add_task(task)
+
+    task.mark_complete()
+
+    assert task.completed is True
+    assert len(pet.care_tasks) == 2
+
+    next_task = pet.care_tasks[1]
+    assert next_task.completed is False
+    assert next_task.frequency == "daily"
+    assert next_task.due_date == date.today() + timedelta(days=1)
+
+
+def test_mark_complete_creates_next_weekly_occurrence():
+    pet = Pet(name="Mochi", species="dog")
+    task = Task(
+        description="Brush coat",
+        duration_minutes=15,
+        frequency="weekly",
+        recurring=True,
+    )
+    pet.add_task(task)
+
+    task.mark_complete()
+
+    assert task.completed is True
+    assert len(pet.care_tasks) == 2
+
+    next_task = pet.care_tasks[1]
+    assert next_task.completed is False
+    assert next_task.frequency == "weekly"
+    assert next_task.due_date == date.today() + timedelta(days=7)
