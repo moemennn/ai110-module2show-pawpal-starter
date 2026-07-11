@@ -13,13 +13,11 @@ The user should be able to see a recommended daily plan that organizes tasks bas
 
 **a. Initial design**
 
-- Briefly describe your initial UML design.
-- What classes did you include, and what responsibilities did you assign to each?
+My initial UML design centered on five main classes to separate the problem into a clear data model and scheduling flow. The `Owner` class represents the person using the app, storing their name, availability windows, preferences, and daily time limit. The `Pet` class represents the animal being cared for, including its name, species, age, special needs, and routine. The `CareTask` class models one care activity, such as a walk, feeding, medication, grooming, or enrichment, with fields for duration, priority, recurrence, preferred time, and completed status. The `DailyPlan` class represents the final schedule for a day, holding the selected tasks, total planned time, and an explanation of why the plan was chosen. Finally, the `Scheduler` class is responsible for taking the owner, pet, and task data, ordering and filtering tasks by constraints, resolving conflicts, and generating the resulting daily plan. This structure keeps the app organized by separating the user context, pet context, task details, and the planning logic.
 
 **b. Design changes**
 
-- Did your design change during implementation?
-- If yes, describe at least one change and why you made it.
+Yes, my design changed slightly during implementation to make the model more realistic and easier to extend. I added an explicit back-reference from `Pet` to its `Owner` and from `CareTask` to its owning `Pet`, so the ownership relationship is no longer only implied by the `Owner` class holding a list of pets. I also introduced a `ScheduleEntry` dataclass to represent an actual scheduled slot in a `DailyPlan`, including start time, end time, and the reason that task was placed there. This change was necessary because the original skeleton only stored a list of tasks, which would make conflict resolution and explanation logic harder once the scheduler started assigning real times. These additions keep the UML closer to the way the Python code will actually behave during scheduling.
 
 ---
 
