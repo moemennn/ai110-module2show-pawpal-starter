@@ -25,8 +25,15 @@ Yes, my design changed slightly during implementation to make the model more rea
 
 **a. Constraints and priorities**
 
-- What constraints does your scheduler consider (for example: time, priority, preferences)?
-- How did you decide which constraints mattered most?
+My scheduler currently considers the following constraints:
+
+- available time budget from the owner's `daily_time_limit`
+- task priority (`high`, `medium`, `low`)
+- preferred time for chronological ordering
+- completion status so only pending tasks are considered for the active plan
+- recurrence/frequency so recurring tasks can be rolled forward automatically
+
+I prioritized time and priority first because those are the most visible and actionable factors for a pet owner trying to create a practical daily care plan. Preferred time matters next because it provides a meaningful schedule order for the day. The other constraints, like recurrence and completion state, influence whether a task should remain in the planning flow or create the next future occurrence.
 
 **b. Tradeoffs**
 
@@ -38,13 +45,15 @@ One tradeoff my scheduler makes is that it currently checks for exact `preferred
 
 **a. How you used AI**
 
-- How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
-- What kinds of prompts or questions were most helpful?
+I used my AI coding assistant in several phases: first to help brainstorm the class structure for the scheduler and data model, then to refine the implementation details while building `Task`, `Scheduler`, and recurrence logic, and later to verify architectural consistency when the UI needed to reflect the backend behavior.
+
+The most effective prompts were the ones that asked for concrete, implementation-aware guidance: for example, asking what methods should live on `Scheduler` to support sorting, filtering, and conflict detection; asking how to keep the recurrence behavior clean and testable; and asking whether the Mermaid UML needed to be updated after the final methods were added.
 
 **b. Judgment and verification**
 
-- Describe one moment where you did not accept an AI suggestion as-is.
-- How did you evaluate or verify what the AI suggested?
+One example was when the AI suggested expanding the scheduler with a more complex overlap algorithm based on time intervals and duration ranges. I rejected that idea for the current version because it would add unnecessary complexity to a lightweight demo-oriented scheduler and would make the design harder to explain. Instead, I kept the conflict detection focused on duplicate preferred-time slots and made the warning visible, which matches the project's current goals.
+
+I verified the AI's suggestions by writing or checking real tests, running the affected code paths, and comparing the results to the behavior described in the prompt. In practice, the strongest validation came from the automated test suite and by exercising the CLI demo so the final behavior was grounded in evidence rather than only in an AI-generated plan.
 
 ---
 
@@ -52,13 +61,21 @@ One tradeoff my scheduler makes is that it currently checks for exact `preferred
 
 **a. What you tested**
 
-- What behaviors did you test?
-- Why were these tests important?
+I tested the behaviors that are most important for a pet-care scheduler:
+
+- chronological sorting of tasks by preferred time
+- filtering by pet and completion state
+- conflict detection when two tasks occupy the same preferred time slot
+- recurrence rollover for daily and weekly recurring tasks
+- task completion and task count updates as the pet's care list grows
+
+These tests were important because they protect the core user-facing behaviors: the app must be able to order tasks sensibly, warn the owner about obvious collisions, and actually carry recurring scheduling forward instead of only storing descriptive metadata.
 
 **b. Confidence**
 
-- How confident are you that your scheduler works correctly?
-- What edge cases would you test next if you had more time?
+I am confident in the current implementation for the scope of this project because the behavior has been exercised through both real tests and a working demo run. The test suite passes cleanly and validates the most important scheduler features.
+
+If I had more time, the next edge cases I would test are malformed or missing preferred times, tasks that exceed the owner's time budget, and more realistic overlap scenarios where two tasks share a window but do not have identical start times. I would also want to test the UI flow directly to confirm that the warning messages are understandable from a pet owner's perspective.
 
 ---
 
@@ -66,12 +83,12 @@ One tradeoff my scheduler makes is that it currently checks for exact `preferred
 
 **a. What went well**
 
-- What part of this project are you most satisfied with?
+I am most satisfied with the way the scheduling engine became clearer as the project matured. The final code separates ownership, pet data, task state, and planning logic in a way that is easy to reason about, and the scheduler now shows visible behavior that the UI can expose directly.
 
 **b. What you would improve**
 
-- If you had another iteration, what would you improve or redesign?
+If I had another iteration, I would improve the scheduling model by adding a more precise time-overlap engine, such as duration-based interval conflict detection instead of only checking identical preferred times. I would also add more explicit explanation metadata to `DailyPlan` so the scheduler can justify why certain tasks were selected or skipped.
 
 **c. Key takeaway**
 
-- What is one important thing you learned about designing systems or working with AI on this project?
+One important lesson is that being the lead architect means you cannot simply accept AI-generated structure uncritically. The AI is very good at proposing plausible abstractions and code, but the final system still needs a human to decide what is clean, minimal, and aligned with the actual product goal. Separating the work into clear phases, verifying the assumptions with tests, and keeping the architecture grounded in real behavior made the collaboration far more productive.

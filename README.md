@@ -12,15 +12,17 @@ A busy pet owner needs help staying consistent with pet care. They want an assis
 
 Your job is to design the system first (UML), then implement the logic in Python, then connect it to the Streamlit UI.
 
-## What you will build
+## Features
 
-Your final app should:
+PawPal+ is designed to make pet-care planning easier for a busy owner by combining a simple Streamlit UI with a small scheduling engine.
 
-- Let a user enter basic owner + pet info
-- Let a user add/edit tasks (duration + priority at minimum)
-- Generate a daily schedule/plan based on constraints and priorities
-- Display the plan clearly (and ideally explain the reasoning)
-- Include tests for the most important scheduling behaviors
+### Core features
+
+- Sorting by preferred time: tasks can be organized chronologically so the day starts with the most time-sensitive work.
+- Filtering by pet or completion state: the scheduler can isolate tasks for one pet or focus only on pending work.
+- Conflict warnings: if multiple tasks share the same preferred time slot, the system raises a visible warning instead of failing.
+- Daily and weekly recurrence: recurring tasks can be marked complete and the next occurrence is automatically created with the correct due date.
+- Daily plan generation: the app chooses a feasible set of tasks, explains the plan, and presents the final schedule clearly.
 
 ## Getting started
 
@@ -93,14 +95,62 @@ The scheduler now includes a small set of lightweight but useful behaviors that 
 | Conflict detection logic | `Scheduler.detect_conflicts()` | Checks whether multiple tasks share the same preferred time slot and emits a warning message instead of crashing the program. |
 | Recurring task logic | `Task._next_due_date()` and `Task.mark_complete()` | When a recurring daily or weekly task is completed, the model creates the next occurrence automatically using `timedelta`. |
 
-## 📸 Demo Walkthrough
+## Demo Walkthrough
 
-Describe your app in numbered steps so a reader can follow along without watching a video:
+Use PawPal+ in the following way:
 
-1. <!-- Describe this step -->
-2. <!-- Describe this step -->
-3. <!-- Describe this step -->
-4. <!-- Describe this step -->
-5. <!-- Add more steps as needed -->
+1. Open the Streamlit app in `app.py` and enter the owner's name.
+2. Add one or more pets to the household.
+3. Add care tasks for each pet, including duration, priority, and an optional preferred time.
+4. Click **Generate schedule** to let the scheduler build a plan from the current owner-wide task list.
+5. Review the schedule table and the scheduler explanation to see how the day was prioritized.
 
-**Screenshot or video** *(optional)*: <!-- Insert a screenshot or link to a demo video here -->
+### Example workflow
+
+A typical workflow looks like this:
+
+- Add a pet such as Mochi.
+- Add a task such as Morning walk with a preferred time of 09:15.
+- Add another pet or task for the same time slot to trigger a conflict warning.
+- Generate the schedule and inspect the sorted, pending, and recurring task views.
+
+### Key scheduler behaviors shown in the UI
+
+- Sorting by time ensures the tasks appear in chronological order.
+- Conflict warnings use `st.warning()` to clearly surface overlapping time slots.
+- Filtered pending tasks help the owner focus on what still needs to be scheduled.
+- Recurring tasks use the same daily/weekly pattern to produce the next scheduled occurrence when complete.
+
+### Sample CLI output from `main.py`
+
+```text
+Today's Schedule
+================
+1. Feeding (10 min) [priority=high]
+2. Morning walk (20 min) [priority=high]
+3. Grooming (15 min) [priority=low]
+
+Sorted by preferred time
+------------------------
+1. Feeding @ 09:15 [high]
+2. Morning walk @ 09:15 [high]
+3. Grooming @ 11:45 [low]
+
+Pending tasks
+--------------
+1. Feeding (Luna)
+2. Morning walk (Mochi)
+3. Grooming (Luna)
+
+Mochi task list
+----------------
+1. Morning walk @ 09:15
+
+Recurring tasks
+----------------
+1. Grooming [daily]
+
+Conflict warnings
+------------------
+Warning: overlapping tasks at 09:15 for different pets: Morning walk, Feeding.
+```

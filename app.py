@@ -1,3 +1,5 @@
+from datetime import time
+
 import streamlit as st
 
 from pawpal_system import Owner, Pet, Scheduler, Task
@@ -84,6 +86,7 @@ if owner.pets:
         task_title = st.text_input("Task title", value="Morning walk")
         duration = st.number_input("Duration (minutes)", min_value=1, max_value=240, value=20)
         priority = st.selectbox("Priority", ["low", "medium", "high"], index=2)
+        preferred_time = st.time_input("Preferred time (optional)", value=time(8, 0))
         add_task_clicked = st.form_submit_button("Add task")
 
     if add_task_clicked:
@@ -92,6 +95,7 @@ if owner.pets:
             duration_minutes=int(duration),
             priority=priority,
             required=True,
+            preferred_time=preferred_time.strftime("%H:%M"),
         )
         selected_pet.add_task(task)
         st.success(f"Added '{task.description}' to {selected_pet.name}.")
@@ -110,8 +114,30 @@ if owner.pets:
             )
 
     if task_rows:
-        st.write("Current tasks:")
-        st.table(task_rows)
+        st.markdown("### Scheduler Preview")
+        scheduler = Scheduler(available_time=owner.daily_time_limit, constraints=["priority", "duration"])
+        pending_tasks = scheduler.filter_tasks_by_status(owner.get_all_tasks(), completed=False)
+        sorted_tasks = scheduler.sort_by_time(pending_tasks)
+        warnings = scheduler.detect_conflicts(sorted_tasks)
+
+        if warnings:
+            st.warning("⚠️ Conflict warning: " + " ".join(warnings))
+        else:
+            st.success("No duplicate time-slot conflicts were found.")
+
+        st.write("Sorted pending tasks:")
+        st.table(
+            [
+                {
+                    "task": task.description,
+                    "pet": task.pet.name if task.pet else "unknown",
+                    "preferred_time": task.preferred_time or "unscheduled",
+                    "duration": task.duration_minutes,
+                    "priority": task.priority,
+                }
+                for task in sorted_tasks
+            ]
+        )
     else:
         st.info("No tasks yet. Add one above.")
 else:
@@ -125,7 +151,14 @@ st.caption("Use the session-backed owner object to generate a plan from all pets
 if st.button("Generate schedule"):
     scheduler = Scheduler(available_time=owner.daily_time_limit, constraints=["priority", "duration"])
     plan = scheduler.build_daily_plan(owner)
+    pending_tasks = scheduler.filter_tasks_by_status(owner.get_all_tasks(), completed=False)
+    warnings = scheduler.detect_conflicts(pending_tasks)
+
     st.success(plan.explanation)
+
+    if warnings:
+        st.warning("⚠️ Conflict warning: " + " ".join(warnings))
+
     st.table(
         [
             {
@@ -133,6 +166,7 @@ if st.button("Generate schedule"):
                 "duration": task.duration_minutes,
                 "priority": task.priority,
                 "pet": task.pet.name if task.pet else "unknown",
+                "preferred_time": task.preferred_time or "unscheduled",
             }
             for task in plan.tasks
         ]

@@ -1,0 +1,98 @@
+classDiagram
+    class Owner {
+        +str name
+        +list availability_windows
+        +list preferences
+        +int daily_time_limit
+        +list pets
+        +add_preference(preference: str)
+        +update_availability(availability_windows: list)
+        +set_time_limit(minutes: int)
+        +add_pet(pet: Pet)
+        +get_all_tasks() list[Task]
+    }
+
+    class Pet {
+        +str name
+        +str species
+        +int age
+        +list special_needs
+        +list routine
+        +list care_tasks
+        +Owner owner
+        +update_profile(species, age, routine)
+        +add_special_need(need: str)
+        +add_task(task: Task)
+        +get_care_requirements() list[str]
+    }
+
+    class Task {
+        +str description
+        +int duration_minutes
+        +str frequency
+        +bool completed
+        +str category
+        +str priority
+        +bool required
+        +bool recurring
+        +str preferred_time
+        +str notes
+        +date due_date
+        +Pet pet
+        +__post_init__()
+        +update_priority(priority: str)
+        +change_duration(duration_minutes: int)
+        +_next_due_date() date | None
+        +mark_complete() Task | None
+        +mark_incomplete()
+        +set_preferred_time(preferred_time: str)
+        +update_duration(duration_minutes: int)
+        +update_frequency(frequency: str)
+    }
+
+    class ScheduleEntry {
+        +Task task
+        +str start_time
+        +str end_time
+        +str reason
+    }
+
+    class DailyPlan {
+        +date date
+        +int total_planned_time
+        +str explanation
+        +list tasks
+        +list schedule_entries
+        +add_task(task: Task)
+        +remove_task(task: Task)
+        +add_schedule_entry(entry: ScheduleEntry)
+        +remove_schedule_entry(entry: ScheduleEntry)
+        +calculate_total_time() int
+        +generate_explanation() str
+    }
+
+    class Scheduler {
+        +int available_time
+        +list constraints
+        +_priority_score(task: Task) int
+        +_time_sort_key(task: Task) tuple[int, int]
+        +sort_by_time(tasks: list[Task]) list[Task]
+        +sort_tasks(tasks: list[Task]) list[Task]
+        +filter_tasks_by_pet(tasks: list[Task], pet_name: str) list[Task]
+        +filter_tasks_by_status(tasks: list[Task], completed: bool) list[Task]
+        +filter_recurring_tasks(tasks: list[Task]) list[Task]
+        +detect_conflicts(tasks: list[Task]) list[str]
+        +filter_tasks(tasks: list[Task]) list[Task]
+        +resolve_conflicts(tasks: list[Task]) list[Task]
+        +build_daily_plan(owner: Owner, pet: Pet | None = None) DailyPlan
+        +explain_plan(plan: DailyPlan) str
+    }
+
+    Owner "1" --> "0..*" Pet : owns
+    Pet "1" --> "0..*" Task : care_tasks
+    Task --> Pet : assigned_to
+    Scheduler --> Owner : plans_for
+    Scheduler --> Task : sorts_filters_evaluates
+    Scheduler --> DailyPlan : builds
+    DailyPlan --> Task : contains
+    DailyPlan --> ScheduleEntry : stores
