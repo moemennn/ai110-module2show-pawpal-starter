@@ -1,0 +1,65 @@
+classDiagram
+    class Owner {
+        +String name
+        +String availabilityWindows
+        +String preferences
+        +int dailyTimeLimit
+        +addPreference()
+        +updateAvailability()
+        +setTimeLimit()
+    }
+
+    class Pet {
+        +String name
+        +String species
+        +int age
+        +String specialNeeds
+        +String routine
+        +updateProfile()
+        +addSpecialNeed()
+        +getCareRequirements()
+    }
+
+    class CareTask {
+        +String title
+        +String category
+        +int durationMinutes
+        +String priority
+        +boolean required
+        +boolean recurring
+        +String preferredTime
+        +String notes
+        +boolean completed
+        +updatePriority()
+        +changeDuration()
+        +markComplete()
+        +setPreferredTime()
+    }
+
+    class DailyPlan {
+        +Date date
+        +int totalPlannedTime
+        +String explanation
+        +addTask()
+        +removeTask()
+        +calculateTotalTime()
+        +generateExplanation()
+    }
+
+    class Scheduler {
+        +int availableTime
+        +String constraints
+        +sortTasks()
+        +filterTasks()
+        +resolveConflicts()
+        +buildDailyPlan()
+        +explainPlan()
+    }
+
+    Owner "1" --> "1..*" Pet : owns
+    Pet "1" --> "0..*" CareTask : has
+    Scheduler --> Owner : uses
+    Scheduler --> Pet : schedules
+    Scheduler --> CareTask : evaluates
+    Scheduler --> DailyPlan : creates
+    DailyPlan --> CareTask : contains

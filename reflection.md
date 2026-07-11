@@ -2,6 +2,15 @@
 
 ## 1. System Design
 
+Three core actions the user should be able to perform:
+
+1- Add and manage a pet profile
+The user should be able to add each pet’s basic information, such as name, species, age, care needs, feeding schedule, medication requirements, exercise level, and preferences.
+Add or schedule pet care tasks
+2- The user should be able to create tasks like walks, feeding, medication, grooming, playtime, enrichment, vet appointments, or cleaning. Each task should include details like priority, preferred time, duration, frequency, and any special instructions.
+3- View and adjust today’s care plan
+The user should be able to see a recommended daily plan that organizes tasks based on available time, importance, deadlines, and owner preferences. They should also be able to mark tasks complete, reschedule them, or ask why the assistant prioritized certain tasks.
+
 **a. Initial design**
 
 - Briefly describe your initial UML design.
